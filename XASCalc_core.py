@@ -336,7 +336,6 @@ class MaterialAbs:
         for item in sorted_printlst:
             print(self.printlst[item])
             
-
 import numpy as np
 import ipywidgets as widgets
 from IPython.display import display
@@ -345,8 +344,11 @@ import xraylib as xrl  # Importing xraylib to get absorption edges
 
 class AbsorptionCalculator:
     def __init__(self):
+        # add a label for the component
+        self.label_sample = widgets.Label(value="Sample compositions")
+        
         # Primary component (sample) input with area density and ratio
-        self.compound_input = widgets.Text(value='LiNi0.9Mn0.04Co0.06O2', description='Sample:')
+        self.compound_input = widgets.Text(value='LiNi0.5Mn0.25Co0.25O2', description='Sample:')
         self.compound_area_density_input = widgets.FloatText(
             value=10, 
             description='Area density [mg/cm^2]:',
@@ -354,7 +356,7 @@ class AbsorptionCalculator:
             style={'description_width': '180px'}  # Adjust width of the label
         )
         
-        self.compound_ratio_slider = widgets.FloatSlider(value=1, min=0, max=1.0, step=0.05, description='Ratio:')
+        self.compound_ratio_slider = widgets.FloatSlider(value=1.0, min=0.1, max=1.0, step=0.01, description='Ratio:')
         self.compound_box = widgets.HBox([self.compound_input, self.compound_ratio_slider, self.compound_area_density_input])
 
         # Matrices will be added here
@@ -373,8 +375,9 @@ class AbsorptionCalculator:
         self.add_component_button = widgets.Button(description="Add a component")
         self.add_component_button.on_click(self.add_component)
 
-        self.add_component_button = widgets.Button(description="Add a component")
-
+        # add a label for the component
+        self.label_measurement = widgets.Label(value="XAS measurement energies")
+        
         # Dropdown for K-edge absorption and Edge type
         self.edge_type_dropdown = self.create_edge_type_dropdown()
         self.abs_edge_dropdown = self.create_abs_edge_dropdown(xrl.K_SHELL)  # Initially set to K-edge
@@ -382,12 +385,24 @@ class AbsorptionCalculator:
         # Put both dropdowns into a horizontal layout
         self.edge_selection_box = widgets.HBox([self.edge_type_dropdown, self.abs_edge_dropdown])
 
+        # Dropdown to select the plotly renderer
+        self.renderer_dropdown = widgets.Dropdown(
+            options=['notebook', 'colab', 'browser', 'png'],
+            value='notebook',
+            description='Renderer:',
+            layout=widgets.Layout(width='200px')
+        )
+
         # Button to trigger the calculation and plotting
         self.run_button = widgets.Button(description="Calculate")
         self.run_button.on_click(self.run_calculation)
 
-        # Output widget to display the results
-        self.output = widgets.Output()
+        # Create two output regions: one for the plot and one for other outputs
+        self.plot_output = widgets.Output()  # Output specifically for the plot
+        self.output = widgets.Output()  # General output for other messages or results
+
+        # Attach observer to update matrix ratios when the primary component ratio slider changes
+        self.compound_ratio_slider.observe(self.on_ratio_change, names='value')
 
     def create_edge_type_dropdown(self):
         edge_types = [('K', xrl.K_SHELL), ('L1', xrl.L1_SHELL), 
@@ -395,7 +410,7 @@ class AbsorptionCalculator:
         
         dropdown = widgets.Dropdown(
             options=edge_types,
-            description='Edge:'
+            description='Edge Type:'
         )
 
         # Add an event handler to update the element dropdown when the edge type changes
@@ -478,7 +493,7 @@ class AbsorptionCalculator:
         new_component_area_density_input = widgets.FloatText(
             value=10, 
             description='Area density [mg/cm^2]:',
-            layout=widgets.Layout(width='300px'),  # Adjust width of the input box
+            layout=widgets.Layout(width='250px'),  # Adjust width of the input box
             style={'description_width': '180px'}  # Adjust width of the label
         )
         remove_button = widgets.Button(description="Remove")
@@ -518,9 +533,16 @@ class AbsorptionCalculator:
             for widget_group in self.matrix_widgets:
                 widget_group['ratio_slider'].value = remaining_ratio / num_matrices
 
+    def on_ratio_change(self, change):
+        """Automatically update the matrix ratios when the primary compound ratio changes."""
+        self.update_ratios()
+
     def run_calculation(self, b):
-        self.output.clear_output(wait=True)  # Clear the previous figure
-        with self.output:    
+        # Clear and reinitialize the plot-specific output widget to ensure no stacking of figures
+        self.plot_output.clear_output(wait=True)
+
+        # Use the plot output region for the plot only
+        with self.plot_output:
             # Get the primary component (sample) info
             formula = self.compound_input.value
             compound_area_density = self.compound_area_density_input.value / 1000
@@ -557,21 +579,32 @@ class AbsorptionCalculator:
             # Combine all components
             all_components = [material_info_i] + matrix_info_list + component_info_list
             test = MaterialAbs(all_components, 
-                            element=xrl.AtomicNumberToSymbol(Z), 
-                            edge=edge_type)
+                               element=xrl.AtomicNumberToSymbol(Z), 
+                               edge=edge_type)
 
             # Pass element and edge information for display in the table
             test.element = self.abs_edge_dropdown.label.split()[0]
             test.edge = self.edge_type_dropdown.label
             test.abs_calc()
 
+            # Get the renderer selection from the dropdown
+            selected_renderer = self.renderer_dropdown.value
+
             # Generate the plot and display it
             fig = test.plot(abs_edge=f'{test.element} {test.edge}')
-            fig.show()
-            
-            # display(fig)  # Display the new figure within the cleared output widget
+            fig.show(renderer=selected_renderer)
 
     def display(self):
-        display(widgets.VBox([self.compound_box, self.matrices_box, self.add_matrix_button,
-                              self.components_box, self.add_component_button,
-                              self.edge_selection_box, self.run_button, self.output]))
+        # Show everything, including the plot output widget and renderer dropdown
+        display(widgets.VBox([self.renderer_dropdown,  # Add the renderer selection
+                              self.label_sample,
+                              self.compound_box, 
+                              self.matrices_box, 
+                              self.add_matrix_button,
+                              self.components_box, 
+                              self.add_component_button,
+                              self.label_measurement,
+                              self.edge_selection_box, 
+                              self.run_button, 
+                              self.plot_output, 
+                              self.output]))
