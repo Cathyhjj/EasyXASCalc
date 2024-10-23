@@ -1,0 +1,16 @@
+name: EasyXASCalc
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.12
+  - numpy
+  - scipy
+  - re
+  - ipywidgets
+  - openpyxl
+  - pip
+  - pip:
+      - xraylib
+      - plotly
+      - IPython
+      - ipympl
