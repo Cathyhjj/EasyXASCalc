@@ -342,7 +342,7 @@ import plotly.graph_objects as go
 import plotly.io as pio  # Import plotly.io to manage renderers
 
 class AbsorptionCalculator:
-    def __init__(self, renderer="notebook"):
+    def __init__(self, renderer="plotly_mimetype") :
         # Store the selected renderer as an instance variable
         self.renderer = renderer
         
