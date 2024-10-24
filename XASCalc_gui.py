@@ -1,13 +1,14 @@
-
+import numpy as np
 from XASCalc_core import MaterialAbs
-import xraylib as xrl
 import ipywidgets as widgets
 from IPython.display import display
 import plotly.graph_objects as go
 import plotly.io as pio  # Import plotly.io to manage renderers
+import plotly.offline as pyo  # Needed for Colab
+import xraylib as xrl  # Importing xraylib to get absorption edges
 
 class AbsorptionCalculator:
-    def __init__(self, renderer="plotly_mimetype") :
+    def __init__(self, renderer="plotly_mimetype"):
         # Store the selected renderer as an instance variable
         self.renderer = renderer
         
@@ -248,7 +249,12 @@ class AbsorptionCalculator:
 
             # Generate the plot and display it using the specified renderer
             fig = test.plot(abs_edge=f'{test.element} {test.edge}')
-            fig.show(renderer=self.renderer)  # Use the renderer passed to the constructor
+            
+            # Show the plot using the correct renderer for Colab
+            if self.renderer == "colab":
+                pyo.iplot(fig)
+            else:
+                fig.show(renderer=self.renderer)  # For notebook or other environments
 
     def display(self):
         # Show everything, including the plot output widget
@@ -263,3 +269,7 @@ class AbsorptionCalculator:
                               self.run_button, 
                               self.plot_output, 
                               self.output]))
+
+# Usage
+calculator = AbsorptionCalculator(renderer="colab")  # Pass 'colab' for Colab renderer, 'notebook' for Jupyter
+calculator.display()
