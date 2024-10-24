@@ -335,16 +335,18 @@ class MaterialAbs:
         sorted_printlst = sorted(self.printlst) if sort else self.printlst
         for item in sorted_printlst:
             print(self.printlst[item])
-            
-import numpy as np
+
 import ipywidgets as widgets
 from IPython.display import display
 import plotly.graph_objects as go
-import xraylib as xrl  # Importing xraylib to get absorption edges
+import plotly.io as pio  # Import plotly.io to manage renderers
 
 class AbsorptionCalculator:
-    def __init__(self):
-        # add a label for the component
+    def __init__(self, renderer="notebook"):
+        # Store the selected renderer as an instance variable
+        self.renderer = renderer
+        
+        # Add a label for the component
         self.label_sample = widgets.Label(value="Sample compositions")
         
         # Primary component (sample) input with area density and ratio
@@ -375,7 +377,7 @@ class AbsorptionCalculator:
         self.add_component_button = widgets.Button(description="Add a component")
         self.add_component_button.on_click(self.add_component)
 
-        # add a label for the component
+        # Add a label for the measurement
         self.label_measurement = widgets.Label(value="XAS measurement energies")
         
         # Dropdown for K-edge absorption and Edge type
@@ -384,14 +386,6 @@ class AbsorptionCalculator:
 
         # Put both dropdowns into a horizontal layout
         self.edge_selection_box = widgets.HBox([self.edge_type_dropdown, self.abs_edge_dropdown])
-
-        # Dropdown to select the plotly renderer
-        self.renderer_dropdown = widgets.Dropdown(
-            options=['notebook', 'colab', 'browser', 'png'],
-            value='notebook',
-            description='Renderer:',
-            layout=widgets.Layout(width='200px')
-        )
 
         # Button to trigger the calculation and plotting
         self.run_button = widgets.Button(description="Calculate")
@@ -534,7 +528,7 @@ class AbsorptionCalculator:
                 widget_group['ratio_slider'].value = remaining_ratio / num_matrices
 
     def on_ratio_change(self, change):
-        """Automatically update the matrix ratios when the primary compound ratio changes."""
+        """Adjusts matrix ratios when the primary component ratio slider changes."""
         self.update_ratios()
 
     def run_calculation(self, b):
@@ -587,17 +581,13 @@ class AbsorptionCalculator:
             test.edge = self.edge_type_dropdown.label
             test.abs_calc()
 
-            # Get the renderer selection from the dropdown
-            selected_renderer = self.renderer_dropdown.value
-
-            # Generate the plot and display it
+            # Generate the plot and display it using the specified renderer
             fig = test.plot(abs_edge=f'{test.element} {test.edge}')
-            fig.show(renderer=selected_renderer)
+            fig.show(renderer=self.renderer)  # Use the renderer passed to the constructor
 
     def display(self):
-        # Show everything, including the plot output widget and renderer dropdown
-        display(widgets.VBox([self.renderer_dropdown,  # Add the renderer selection
-                              self.label_sample,
+        # Show everything, including the plot output widget
+        display(widgets.VBox([self.label_sample,
                               self.compound_box, 
                               self.matrices_box, 
                               self.add_matrix_button,
