@@ -3,7 +3,7 @@ import ipywidgets as widgets
 from IPython.display import display
 import plotly.graph_objects as go
 import xraylib as xrl
-from .EasyXASCalc.XASCalc_core import MaterialAbs
+from .XASCalc_core import MaterialAbs
 import plotly.io as pio  # Necessary for Colab renderer
 
 
