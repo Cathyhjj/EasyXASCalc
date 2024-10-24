@@ -3,7 +3,7 @@ import ipywidgets as widgets
 from IPython.display import display
 import plotly.graph_objects as go
 import xraylib as xrl
-from .XASCalc_core import MaterialAbs
+from XASCalc_core import MaterialAbs
 import plotly.io as pio  # Necessary for Colab renderer
 
 
@@ -59,6 +59,9 @@ class AbsorptionCalculator:
         # Create an output region specifically for the plot
         self.plot_output = widgets.Output()
 
+        # Attach observer to update matrix ratios when the primary component ratio slider changes
+        self.compound_ratio_slider.observe(self.on_ratio_change, names='value')
+
     def create_edge_type_dropdown(self):
         edge_types = [('K', xrl.K_SHELL), ('L1', xrl.L1_SHELL),
                       ('L2', xrl.L2_SHELL), ('L3', xrl.L3_SHELL)]
@@ -92,6 +95,10 @@ class AbsorptionCalculator:
         new_shell = change['new']
         self.abs_edge_dropdown = self.create_abs_edge_dropdown(new_shell)
         self.edge_selection_box.children = [self.edge_type_dropdown, self.abs_edge_dropdown]
+
+    def on_ratio_change(self, change):
+        # Update matrix ratios when the primary component ratio slider changes
+        self.update_ratios()
 
     def add_matrix(self, b):
         compound_ratio = self.compound_ratio_slider.value
