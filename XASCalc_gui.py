@@ -1,7 +1,5 @@
-import numpy as np
 import ipywidgets as widgets
 from IPython.display import display
-import plotly.graph_objects as go
 import xraylib as xrl
 from XASCalc_core import MaterialAbs
 import plotly.io as pio  # Necessary for Colab renderer
@@ -45,12 +43,22 @@ class AbsorptionCalculator:
         # Add a label for the measurement
         self.label_measurement = widgets.Label(value="XAS measurement energies")
 
+        # Initialize vertical layout for edge selection boxes
+        self.edge_selection_boxes = widgets.VBox()
+
+        # Button to add more edge selection boxes
+        self.add_edge_selection_box = widgets.Button(description="Add one more edge")
+        self.add_edge_selection_box.on_click(self.add_edge_selection)
+
         # Dropdown for K-edge absorption and Edge type
         self.edge_type_dropdown = self.create_edge_type_dropdown()
         self.abs_edge_dropdown = self.create_abs_edge_dropdown(xrl.K_SHELL)
 
-        # Put both dropdowns into a horizontal layout
-        self.edge_selection_box = widgets.HBox([self.edge_type_dropdown, self.abs_edge_dropdown])
+        # Add the first edge selection box with a remove button
+        self.add_edge_selection(None)  # Adds the initial edge_selection_box
+
+        # Horizontal layout for label and "Add one more edge" button
+        self.measurement_hbox = widgets.HBox([self.label_measurement, self.add_edge_selection_box])
 
         # Button to trigger the calculation and plotting
         self.run_button = widgets.Button(description="Calculate")
@@ -61,19 +69,28 @@ class AbsorptionCalculator:
 
         # Attach observer to update matrix ratios when the primary component ratio slider changes
         self.compound_ratio_slider.observe(self.on_ratio_change, names='value')
-
+        
+    def add_edge_selection(self, b):
+        edge_type_dropdown = self.create_edge_type_dropdown()
+        abs_edge_dropdown = self.create_abs_edge_dropdown(edge_type_dropdown.value)
+        remove_button = widgets.Button(description="Remove")
+        
+        def remove_edge_selection(_):
+            # Remove the edge_selection_box containing this button
+            self.edge_selection_boxes.children = [child for child in self.edge_selection_boxes.children if child != edge_selection_box]
+        
+        remove_button.on_click(remove_edge_selection)
+        edge_selection_box = widgets.HBox([edge_type_dropdown, abs_edge_dropdown, remove_button])        
+        self.edge_selection_boxes.children = list(self.edge_selection_boxes.children) + [edge_selection_box]
+        
     def create_edge_type_dropdown(self):
         edge_types = [('K', xrl.K_SHELL), ('L1', xrl.L1_SHELL),
                       ('L2', xrl.L2_SHELL), ('L3', xrl.L3_SHELL)]
-
         dropdown = widgets.Dropdown(
             options=edge_types,
             description='Edge Type:'
         )
-
-        # Add an event handler to update the element dropdown when the edge type changes
         dropdown.observe(self.on_edge_type_change, names='value')
-
         return dropdown
 
     def create_abs_edge_dropdown(self, shell):
@@ -85,7 +102,6 @@ class AbsorptionCalculator:
                 options.append((f'{symbol} ({edge_energy:.1f} eV)', Z))
             except ValueError:
                 pass
-
         return widgets.Dropdown(
             options=options,
             description='Element:'
@@ -97,7 +113,6 @@ class AbsorptionCalculator:
         self.edge_selection_box.children = [self.edge_type_dropdown, self.abs_edge_dropdown]
 
     def on_ratio_change(self, change):
-        # Update matrix ratios when the primary component ratio slider changes
         self.update_ratios()
 
     def add_matrix(self, b):
@@ -120,7 +135,6 @@ class AbsorptionCalculator:
             self.update_ratios()
 
         remove_button.on_click(lambda b: remove_matrix(b, new_matrix_box, widget_group))
-
         new_matrix_box = widgets.HBox([new_matrix_input, new_matrix_ratio_slider, remove_button])
 
         widget_group = {
@@ -129,7 +143,6 @@ class AbsorptionCalculator:
             'remove_button': remove_button,
             'box': new_matrix_box
         }
-
         self.matrix_widgets.append(widget_group)
         self.matrices_box.children = list(self.matrices_box.children) + [new_matrix_box]
 
@@ -148,7 +161,6 @@ class AbsorptionCalculator:
             self.component_widgets.remove(widget_group)
 
         remove_button.on_click(lambda b: remove_component(b, new_component_box, widget_group))
-
         new_component_box = widgets.HBox([new_component_input, new_component_area_density_input, remove_button])
 
         widget_group = {
@@ -157,7 +169,6 @@ class AbsorptionCalculator:
             'remove_button': remove_button,
             'box': new_component_box
         }
-
         self.component_widgets.append(widget_group)
         self.components_box.children = list(self.components_box.children) + [new_component_box]
 
@@ -174,18 +185,18 @@ class AbsorptionCalculator:
         self.plot_output.clear_output(wait=True)
 
         with self.plot_output:
+            # Get the primary component (sample) info
             formula = self.compound_input.value
             compound_area_density = self.compound_area_density_input.value / 1000
             compound_ratio = self.compound_ratio_slider.value
 
-            Z = self.abs_edge_dropdown.value
-            edge_type = self.edge_type_dropdown.label
-
+            # Prepare primary sample info
             material_info_i = {
                 "compound": formula,
                 "area_density": compound_area_density * compound_ratio
             }
 
+            # Gather all matrix information (area density same as sample)
             matrix_info_list = []
             for widget_group in self.matrix_widgets:
                 matrix_info = {
@@ -194,29 +205,43 @@ class AbsorptionCalculator:
                 }
                 matrix_info_list.append(matrix_info)
 
+            # Gather all component information
             component_info_list = []
             for widget_group in self.component_widgets:
                 component_info = {
                     "compound": widget_group['input'].value,
-                    "area_density": widget_group['area_density'].value / 1000
+                    "area_density": widget_group['area_density'].value / 1000  # Convert to g/cm²
                 }
                 component_info_list.append(component_info)
 
+            # Combine all components
             all_components = [material_info_i] + matrix_info_list + component_info_list
-            test = MaterialAbs(all_components, element=xrl.AtomicNumberToSymbol(Z), edge=edge_type)
 
-            test.element = self.abs_edge_dropdown.label.split()[0]
-            test.edge = self.edge_type_dropdown.label
-            test.abs_calc()
+            # Loop through each edge_selection_box to create separate plots
+            for edge_box in self.edge_selection_boxes.children:
+                edge_type_dropdown, abs_edge_dropdown, _ = edge_box.children  # Unpack, ignoring the remove_button
+                edge_type = edge_type_dropdown.label
+                Z = abs_edge_dropdown.value
+                
+                # Create MaterialAbs object for this edge/element
+                test = MaterialAbs(all_components, element=xrl.AtomicNumberToSymbol(Z), edge=edge_type)
 
-            fig = test.plot(abs_edge=f'{test.element} {test.edge}')
+                # Set element and edge info for display
+                test.element = abs_edge_dropdown.label.split()[0]
+                test.edge = edge_type_dropdown.label
 
-            # Use direct display for Colab instead of fig.show()
-            if self.renderer == "colab":
-                pio.renderers.default = "colab"
-                display(fig)
-            else:
-                fig.show(renderer=self.renderer)
+                # Perform calculations
+                test.abs_calc()
+
+                # Generate the plot
+                fig = test.plot(abs_edge=f'{test.element} {test.edge}')
+
+                # Display the plot
+                if self.renderer == "colab":
+                    pio.renderers.default = "colab"
+                    display(fig)
+                else:
+                    fig.show(renderer=self.renderer)
 
     def display(self):
         display(widgets.VBox([self.label_sample,
@@ -225,7 +250,7 @@ class AbsorptionCalculator:
                               self.add_matrix_button,
                               self.components_box,
                               self.add_component_button,
-                              self.label_measurement,
-                              self.edge_selection_box,
+                              self.measurement_hbox,
+                              self.edge_selection_boxes,
                               self.run_button,
                               self.plot_output]))
