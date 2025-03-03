@@ -8,4 +8,4 @@ The package is based on xraylib library.
 Juanjuan Huang
 juanjuan.huang@anl.gov
 
-![GUI snap shot](image.png)
+![GUI snap shot](snapshot.png)
