@@ -395,25 +395,32 @@ function App() {
                   <div className="error-msg">Error: {res.error}</div>
                 ) : (
                   <>
-                    <h3>{res.element} - {res.edge} Edge ({res.edge_value?.toFixed(1)} eV)</h3>
-                    {res.compound_latex && (
-                      <div className="latex-container">
-                        <BlockMath>{res.compound_latex.replace(/\$\$/g, '')}</BlockMath>
+                    <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Activity size={18} />
+                      <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{res.element} - {res.edge} Edge ({res.edge_value?.toFixed(1)} eV)</h3>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                      <div className="stats-row" style={{ margin: 0, padding: '0.4rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <div className="stat" data-tooltip="The optimal edge jump is 1.0, with a recommended range of 0.3 to 3.0.">
+                          <span className="label help-cursor" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                            Edge Jump <Info size={10} />
+                          </span>
+                          <span className="value" style={{ fontSize: '1.1rem' }}>{res.edge_jump?.toFixed(3)}</span>
+                        </div>
+                        <div className="stat" data-tooltip="Total absorption should ideally be kept below 4.0.">
+                          <span className="label help-cursor" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                            Max Absorption <Info size={10} />
+                          </span>
+                          <span className="value" style={{ fontSize: '1.1rem' }}>{res.abs_max?.toFixed(3)}</span>
+                        </div>
                       </div>
-                    )}
-                    <div className="stats-row">
-                      <div className="stat" data-tooltip="The optimal edge jump is 1.0, with a recommended range of 0.3 to 3.0.">
-                        <span className="label help-cursor" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          Edge Jump <Info size={12} />
-                        </span>
-                        <span className="value">{res.edge_jump?.toFixed(3)}</span>
-                      </div>
-                      <div className="stat" data-tooltip="Total absorption should ideally be kept below 4.0.">
-                        <span className="label help-cursor" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          Max Absorption <Info size={12} />
-                        </span>
-                        <span className="value">{res.abs_max?.toFixed(3)}</span>
-                      </div>
+
+                      {res.compound_latex && (
+                        <div className="latex-container" style={{ margin: 0, flex: 1 }}>
+                          <BlockMath>{res.compound_latex.replace(/\$\$/g, '')}</BlockMath>
+                        </div>
+                      )}
                     </div>
                     <div className="plot-container">
                       <Plot
@@ -421,7 +428,7 @@ function App() {
                         layout={{
                           ...res.plot.layout,
                           width: undefined, // Let it be responsive
-                          height: 350,
+                          height: 450,
                           paper_bgcolor: '#ffffff',
                           plot_bgcolor: '#ffffff',
                           font: { color: '#1e293b' },

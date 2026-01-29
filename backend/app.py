@@ -21,7 +21,7 @@ SHELL_MAP = {
 def index():
     return app.send_static_file('index.html')
 
-@app.route('/calculate', methods=['POST'])
+@app.route('/api/calculate', methods=['POST'])
 def calculate():
     try:
         data = request.json
@@ -68,7 +68,7 @@ def calculate():
         logging.error(f"Global error: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/elements', methods=['GET'])
+@app.route('/api/elements', methods=['GET'])
 def get_elements():
     elements = []
     for Z in range(1, 101):
