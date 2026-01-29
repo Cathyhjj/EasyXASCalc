@@ -15,7 +15,7 @@ function App() {
   // State
   const [sample, setSample] = useState({
     compound: 'LiNi0.5Mn0.25Co0.25O2',
-    area_density: 10,
+    area_density: 60,
     ratio: 0.2
   });
 
@@ -253,7 +253,7 @@ function App() {
                   />
                 </div>
                 <div>
-                  <label className="label">Ratio: {sample.ratio.toFixed(2)} (Sample) / {(1 - sample.ratio).toFixed(2)} (Matrix)</label>
+                  <label className="label">Weight Percent: {(sample.ratio * 100).toFixed(0)}% (Sample) / {((1 - sample.ratio) * 100).toFixed(0)}% (Matrix)</label>
                   <input
                     type="range"
                     min="0.1" max="1.0" step="0.01"
@@ -295,8 +295,8 @@ function App() {
                         />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label className="label">Ratio</label>
-                        <div className="read-only-val">{m.ratio.toFixed(2)}</div>
+                        <label className="label">Weight Percent</label>
+                        <div className="read-only-val">{(m.ratio * 100).toFixed(0)}%</div>
                       </div>
                       <button className="danger icon-btn" onClick={() => removeMatrix(m.id)}>
                         <Trash2 size={16} />
