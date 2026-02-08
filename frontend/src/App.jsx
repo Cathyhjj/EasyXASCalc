@@ -82,15 +82,23 @@ function App() {
     setEdges(prev => prev.filter(e => e.id !== id));
   };
 
-  const handleLike = () => {
-    if (!liked) {
-      setLikeCount(prev => prev + 1);
-      setLiked(true);
-    } else {
-      setLikeCount(prev => prev - 1);
-      setLiked(false);
+  const handleLike = async () => {
+    try {
+      const action = liked ? 'unlike' : 'like';
+      const response = await axios.post('/api/likes', { action });
+      setLikeCount(response.data.count);
+      setLiked(!liked);
+    } catch (err) {
+      console.error('Failed to update like:', err);
     }
   };
+
+  // Fetch likes count on mount
+  useEffect(() => {
+    axios.get('/api/likes')
+      .then(res => setLikeCount(res.data.count))
+      .catch(err => console.error('Failed to fetch likes:', err));
+  }, []);
 
   const handleCalculate = async () => {
     setIsCalculating(true);
