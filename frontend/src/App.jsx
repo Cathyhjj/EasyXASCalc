@@ -8,9 +8,11 @@ import 'katex/dist/katex.min.css';
 import { BlockMath } from 'react-katex';
 import './App.css';
 import logo from './assets/logo/logo.png';
+import { trackEvent } from './analytics';
 
 // Utility for generating unique IDs
 const uid = () => Math.random().toString(36).substr(2, 9);
+const MotionDiv = motion.div;
 
 function App() {
   // State
@@ -70,6 +72,9 @@ function App() {
       const response = await axios.post('/api/likes', { action });
       setLikeCount(response.data.count);
       setLiked(!liked);
+      trackEvent(action === 'like' ? 'like_app' : 'unlike_app', {
+        value: response.data.count
+      });
     } catch (err) {
       console.error('Failed to update like:', err);
     }
@@ -98,6 +103,11 @@ function App() {
           element: e.element
         }));
         setEdges(newEdges);
+        trackEvent('auto_edges_found', {
+          edge_count: newEdges.length,
+          min_energy: autoEdgeMin,
+          max_energy: autoEdgeMax
+        });
       } else {
         alert("No edges found in this energy range for the first sample layer.");
       }
@@ -168,6 +178,11 @@ function App() {
 
       if (response.data.error) throw new Error(response.data.error);
       setResults(response.data.results);
+      trackEvent('calculate_absorption', {
+        calculation_mode: calcMode,
+        sample_count: allCompounds.length,
+        edge_count: edgesPayload.length
+      });
 
     } catch (err) {
       setError(err.message || 'Calculation failed');
@@ -179,6 +194,8 @@ function App() {
   // Auto-calculate on mount
   useEffect(() => {
     handleCalculate();
+    // The first calculation should run once with the default inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -233,7 +250,7 @@ function App() {
 
               <AnimatePresence>
                 {calcMode === 'pellet' && (
-                  <motion.div
+                  <MotionDiv
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
@@ -272,7 +289,7 @@ function App() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </MotionDiv>
                 )}
               </AnimatePresence>
             </section>
@@ -287,7 +304,7 @@ function App() {
 
               <AnimatePresence>
                 {components.map((c, idx) => (
-                  <motion.div
+                  <MotionDiv
                     key={c.id}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -352,7 +369,7 @@ function App() {
                     <button className="danger icon-btn" onClick={() => removeComponent(c.id)} style={{ alignSelf: 'flex-start', marginTop: '1.8rem' }}>
                       <Trash2 size={16} />
                     </button>
-                  </motion.div>
+                  </MotionDiv>
                 ))}
               </AnimatePresence>
               {components.length === 0 && <div className="empty-state">No sample compounds</div>}
@@ -398,7 +415,7 @@ function App() {
 
               <AnimatePresence>
                 {edges.map((edge, idx) => (
-                  <motion.div
+                  <MotionDiv
                     key={edge.id}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -436,7 +453,7 @@ function App() {
                     <button className="danger icon-btn" onClick={() => removeEdge(edge.id)}>
                       <Trash2 size={16} />
                     </button>
-                  </motion.div>
+                  </MotionDiv>
                 ))}
               </AnimatePresence>
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color)' }}>
@@ -473,7 +490,7 @@ function App() {
               const alertColor = '#de425b';
 
               return (
-                <motion.div
+                <MotionDiv
                   key={idx}
                   className="card plot-card"
                   initial={{ opacity: 0, y: 20 }}
@@ -532,7 +549,7 @@ function App() {
                       </div>
                     </>
                   )}
-                </motion.div>
+                </MotionDiv>
               );
             })}
           </div>

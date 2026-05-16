@@ -22,6 +22,7 @@ This guide explains how to deploy your EasyXASCalc web application to the intern
     * **Build Command**: `./render-build.sh`
         * *This script (which I just created for you) builds the React frontend and installs Python dependencies.*
     * **Start Command**: `cd backend && gunicorn app:app`
+    * **Environment Variable**: add `VITE_GA_MEASUREMENT_ID` with the Google Analytics web stream measurement ID from the `dr.xas.drx@gmail.com` Analytics property, for example `G-XXXXXXXXXX`.
 4. **Create Web Service**:
     * Scroll down and click **"Create Web Service"**.
 5. **Wait for Build**:
@@ -35,6 +36,7 @@ This guide explains how to deploy your EasyXASCalc web application to the intern
 
 * **Free Tier**: The free tier on Render spins down after 15 minutes of inactivity. The next time someone opens the link, it might take 30-60 seconds to "wake up". This is normal for free hosting.
 * **Static Files**: The application is configured (`app.py`) to serve the compiled frontend (`frontend/dist`) as static files, so you don't need a separate frontend server.
+* **Google Analytics**: The React build reads `VITE_GA_MEASUREMENT_ID` at build time. If you add or change this value in Render, redeploy the service so the frontend bundle contains the new measurement ID.
 
 ## Troubleshooting
 
